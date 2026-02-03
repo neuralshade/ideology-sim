@@ -3,15 +3,15 @@ from scipy.special import softmax
 
 class SocietyModel:
     def __init__(self, N=5000, seed=42):
-        rng = np.random.default_rng(seed)
+        self.rng = np.random.default_rng(seed)
 
         self.N = N
         self.t = 0
 
         # === MICRO ===
-        self.income = rng.pareto(2.0, N)
+        self.income = self.rng.pareto(2.0, N)
         self.income /= self.income.max()
-        self.ideology = rng.uniform(-1, 1, N)
+        self.ideology = self.rng.uniform(-1, 1, N)
 
         # === MACRO ===
         self.G = 0.45
@@ -67,15 +67,14 @@ class SocietyModel:
     # -------------------------------
     def step(self):
         M = self.mobility()
-        rng = np.random.default_rng()
 
         for i in range(self.N):
-            if rng.random() < M:
+            if self.rng.random() < M:
                 utilities = np.array([
                     self.utility(i, ide) for ide in self.ideology_bins
                 ])
                 probs = softmax(utilities)
-                self.ideology[i] = rng.choice(self.ideology_bins, p=probs)
+                self.ideology[i] = self.rng.choice(self.ideology_bins, p=probs)
 
         self.update_macro()
         self.t += 1
