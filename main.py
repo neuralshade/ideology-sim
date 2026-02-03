@@ -76,7 +76,7 @@ def build_app(steps=120, seed=42, agents=5000):
 app = build_app()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Ideology simulation dashboard")
+    parser = argparse.ArgumentParser(description="Ideology simulation dashboard.")
     parser.add_argument("--steps", type=int, default=120, help="Número de passos iniciais")
     parser.add_argument("--seed", type=int, default=42, help="Seed para reprodutibilidade")
     parser.add_argument("--agents", type=int, default=5000, help="Número de agentes")
