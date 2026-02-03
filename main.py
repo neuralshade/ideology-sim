@@ -1,4 +1,5 @@
 import time
+import numpy as np
 import pandas as pd
 from dash import Dash, dcc, html, Input, Output, State
 import plotly.express as px
@@ -60,6 +61,86 @@ def build_home_data(steps=120, seed=42, agents=5000):
 
 HOME_DF, HOME_IDEOLOGY_OPTIONS, HOME_MACRO_OPTIONS = build_home_data()
 
+IDELOGY_WEIGHT_RULES = {
+    "Desigualdade": {
+        "neutral": 0.5,
+        "weights": {
+            "Comunismo": 1.3,
+            "Socialismo Democrático": 1.1,
+            "Social-democracia": 0.6,
+            "Centrismo": -0.2,
+            "Conservadorismo": -0.7,
+            "Libertarianismo": -0.9,
+        },
+    },
+    "Desemprego": {
+        "neutral": 0.3,
+        "weights": {
+            "Comunismo": 1.0,
+            "Socialismo Democrático": 0.8,
+            "Social-democracia": 0.5,
+            "Centrismo": -0.2,
+            "Conservadorismo": -0.5,
+            "Libertarianismo": -0.6,
+        },
+    },
+    "Crescimento": {
+        "neutral": 0.0,
+        "weights": {
+            "Comunismo": -0.6,
+            "Socialismo Democrático": -0.4,
+            "Social-democracia": -0.1,
+            "Centrismo": 0.2,
+            "Conservadorismo": 0.6,
+            "Libertarianismo": 0.8,
+        },
+    },
+    "Satisfação": {
+        "neutral": 0.5,
+        "weights": {
+            "Comunismo": -0.6,
+            "Socialismo Democrático": -0.2,
+            "Social-democracia": 0.2,
+            "Centrismo": 1.0,
+            "Conservadorismo": 0.3,
+            "Libertarianismo": -0.3,
+        },
+    },
+    "Polarização": {
+        "neutral": 0.3,
+        "weights": {
+            "Comunismo": 0.7,
+            "Socialismo Democrático": 0.4,
+            "Social-democracia": -0.2,
+            "Centrismo": -0.8,
+            "Conservadorismo": 0.4,
+            "Libertarianismo": 0.7,
+        },
+    },
+}
+
+
+def calculate_ideology_chances(parameters):
+    scores = {label: 0.0 for label in HOME_IDEOLOGY_OPTIONS}
+
+    for name, value in parameters.items():
+        rule = IDELOGY_WEIGHT_RULES[name]
+        delta = value - rule["neutral"]
+        for ideology, weight in rule["weights"].items():
+            scores[ideology] += weight * delta
+
+    score_values = np.array([scores[label] for label in HOME_IDEOLOGY_OPTIONS])
+    exp_scores = np.exp(score_values - np.max(score_values))
+    probs = exp_scores / exp_scores.sum()
+
+    return pd.DataFrame(
+        {
+            "Ideologia": HOME_IDEOLOGY_OPTIONS,
+            "Score": score_values,
+            "Chance": probs,
+        }
+    )
+
 
 # --- Layout da Página Principal (Dashboard original integrado) ---
 def get_home_layout():
@@ -69,6 +150,12 @@ def get_home_layout():
             "Ir para Calculadora de Multiverso (/calc-reality)",
             href="/calc-reality",
             className="link-button",
+        ),
+        html.A(
+            "Ir para Analisador de Aceitação Ideológica (/ideology-chances)",
+            href="/ideology-chances",
+            className="link-button",
+            style={"marginLeft": "12px"},
         ),
         html.Hr(),
         html.Div(
@@ -187,6 +274,95 @@ def get_calc_reality_layout():
         )
     ])
 
+
+def get_ideology_chances_layout():
+    return html.Div([
+        html.H2("📈 Analisador de Aceitação Ideológica"),
+        html.P(
+            "Informe valores numéricos para diferentes parâmetros sociais e veja quais "
+            "ideologias tendem a ganhar ou perder apoio."
+        ),
+        html.Div(
+            [
+                html.Div(
+                    [
+                        html.Label("Desigualdade (0-1)"),
+                        dcc.Slider(
+                            id="input-inequality",
+                            min=0,
+                            max=1,
+                            step=0.01,
+                            value=0.45,
+                            marks={0: "0", 0.5: "0.5", 1: "1"},
+                        ),
+                    ],
+                    style={"flex": "1", "minWidth": "240px"},
+                ),
+                html.Div(
+                    [
+                        html.Label("Desemprego (0-1)"),
+                        dcc.Slider(
+                            id="input-unemployment",
+                            min=0,
+                            max=1,
+                            step=0.01,
+                            value=0.1,
+                            marks={0: "0", 0.5: "0.5", 1: "1"},
+                        ),
+                    ],
+                    style={"flex": "1", "minWidth": "240px"},
+                ),
+                html.Div(
+                    [
+                        html.Label("Crescimento (-0.05 a 0.10)"),
+                        dcc.Slider(
+                            id="input-growth",
+                            min=-0.05,
+                            max=0.1,
+                            step=0.005,
+                            value=0.02,
+                            marks={-0.05: "-0.05", 0: "0", 0.1: "0.10"},
+                        ),
+                    ],
+                    style={"flex": "1", "minWidth": "260px"},
+                ),
+                html.Div(
+                    [
+                        html.Label("Satisfação Social (0-1)"),
+                        dcc.Slider(
+                            id="input-satisfaction",
+                            min=0,
+                            max=1,
+                            step=0.01,
+                            value=0.55,
+                            marks={0: "0", 0.5: "0.5", 1: "1"},
+                        ),
+                    ],
+                    style={"flex": "1", "minWidth": "240px"},
+                ),
+                html.Div(
+                    [
+                        html.Label("Polarização (0-1)"),
+                        dcc.Slider(
+                            id="input-polarization",
+                            min=0,
+                            max=1,
+                            step=0.01,
+                            value=0.2,
+                            marks={0: "0", 0.5: "0.5", 1: "1"},
+                        ),
+                    ],
+                    style={"flex": "1", "minWidth": "240px"},
+                ),
+            ],
+            style={"display": "flex", "gap": "16px", "flexWrap": "wrap"},
+        ),
+        html.Br(),
+        dcc.Graph(id="ideology-impact-graph"),
+        dcc.Graph(id="ideology-chance-graph"),
+    ])
+
+
 # =============================================================================
 # APP DASH & ROUTING
 # =============================================================================
@@ -203,6 +379,8 @@ app.layout = html.Div([
 def display_page(pathname):
     if pathname == '/calc-reality':
         return get_calc_reality_layout()
+    if pathname == '/ideology-chances':
+        return get_ideology_chances_layout()
     else:
         # Por padrão mostra uma versão simplificada ou o app original
         # Aqui, apenas para exemplo, mostramos um link. 
@@ -329,6 +507,52 @@ def update_plots(t, ideology_selected, macro_selected, ideology_mode, smooth_win
     )
 
     return fig1, fig2, fig3
+
+
+@app.callback(
+    Output("ideology-impact-graph", "figure"),
+    Output("ideology-chance-graph", "figure"),
+    Input("input-inequality", "value"),
+    Input("input-unemployment", "value"),
+    Input("input-growth", "value"),
+    Input("input-satisfaction", "value"),
+    Input("input-polarization", "value"),
+)
+def update_ideology_chances(inequality, unemployment, growth, satisfaction, polarization):
+    parameters = {
+        "Desigualdade": inequality,
+        "Desemprego": unemployment,
+        "Crescimento": growth,
+        "Satisfação": satisfaction,
+        "Polarização": polarization,
+    }
+    df = calculate_ideology_chances(parameters)
+    max_abs = max(abs(df["Score"].min()), abs(df["Score"].max()), 0.1)
+
+    impact_fig = px.bar(
+        df,
+        x="Ideologia",
+        y="Score",
+        color="Score",
+        color_continuous_scale="RdBu",
+        range_color=[-max_abs, max_abs],
+        title="Impacto relativo dos parâmetros (positivo = aumenta adesão)",
+        labels={"Score": "Impacto", "Ideologia": "Ideologia"},
+    )
+    impact_fig.add_hline(y=0, line_dash="dot")
+
+    chance_fig = px.bar(
+        df,
+        x="Ideologia",
+        y="Chance",
+        text=df["Chance"].map(lambda value: f"{value:.0%}"),
+        title="Chance relativa de aceitação por ideologia",
+        labels={"Chance": "Probabilidade", "Ideologia": "Ideologia"},
+    )
+    chance_fig.update_traces(textposition="outside")
+    chance_fig.update_layout(yaxis_tickformat=".0%")
+
+    return impact_fig, chance_fig
 
 if __name__ == "__main__":
     # Roda o servidor
