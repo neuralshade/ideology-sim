@@ -18,14 +18,26 @@ class SocietyModel:
         self.S = 0.55
         self.U = 0.1
         self.C = 0.02
+        self.avg_ideology = 0.0
+        self.polarization = 0.0
 
         # === PARÂMETROS ===
         self.S_crit = 0.7
         self.sigma = 0.08
         self.m0 = 0.35
 
-        self.ideology_bins = np.array([-0.8, -0.3, 0.3, 0.8])
-        self.labels = ["Comunismo", "Social-democracia", "Capitalismo", "Libertarianismo"]
+        self.ideology_bins = np.array([-0.85, -0.55, -0.2, 0.2, 0.55, 0.85])
+        self.labels = [
+            "Comunismo",
+            "Socialismo Democrático",
+            "Social-democracia",
+            "Centrismo",
+            "Conservadorismo",
+            "Libertarianismo",
+        ]
+        self.bin_edges = np.concatenate(
+            ([-1.0], (self.ideology_bins[:-1] + self.ideology_bins[1:]) / 2, [1.0])
+        )
 
     # -------------------------------
     # Mobilidade ideológica contínua
@@ -87,6 +99,8 @@ class SocietyModel:
 
         avg_ideology = np.mean(self.ideology)
         polarization = np.var(self.ideology)
+        self.avg_ideology = avg_ideology
+        self.polarization = polarization
 
         self.S = np.clip(
             0.75
@@ -96,16 +110,33 @@ class SocietyModel:
             0, 1
         )
 
+        self.U = np.clip(
+            0.08 + 0.5 * self.G + 0.2 * polarization - 0.3 * self.S,
+            0,
+            1,
+        )
+        self.C = np.clip(
+            0.05 + 0.3 * self.S - 0.2 * self.G - 0.2 * polarization,
+            -0.05,
+            0.1,
+        )
+
     # -------------------------------
     # Observáveis
     # -------------------------------
     def snapshot(self):
-        return {
-            "Comunismo": np.mean(self.ideology < -0.5),
-            "Social-democracia": np.mean((self.ideology >= -0.5) & (self.ideology < 0)),
-            "Capitalismo": np.mean((self.ideology >= 0) & (self.ideology < 0.5)),
-            "Libertarianismo": np.mean(self.ideology >= 0.5),
+        bin_ids = np.digitize(self.ideology, self.bin_edges[1:-1], right=False)
+        snapshot = {
+            label: np.mean(bin_ids == idx)
+            for idx, label in enumerate(self.labels)
+        }
+        snapshot.update({
             "Satisfação": self.S,
             "Mobilidade": self.mobility(),
-            "Gini": self.G
-        }
+            "Gini": self.G,
+            "Polarização": self.polarization,
+            "Ideologia média": self.avg_ideology,
+            "Desemprego": self.U,
+            "Crescimento": self.C,
+        })
+        return snapshot
