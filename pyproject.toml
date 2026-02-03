@@ -1,7 +1,7 @@
 [project]
 name = "ideology-sim"
 version = "0.1.0"
-description = "Add your description here"
+description = "Agent-based simulation of ideological dynamics with a Dash dashboard"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

@@ -62,6 +62,12 @@ python main.py
 3. Abra o navegador nesse endereço para interagir com a visualização.
 **Nota:** O `main.py` executa inicialmente 120 passos de simulação antes de carregar a interface.
 
+### Personalização via linha de comando
+Pode ajustar o número de passos, o número de agentes e a seed da simulação:
+```bash
+python main.py --steps 200 --agents 8000 --seed 123
+```
+
 ## 📊 Estrutura do Dashboard
 A interface apresenta dois gráficos principais:
 1. **Evolução Ideológica:** Um gráfico de área que mostra a proporção da população em cada quadrante ideológico ao longo do tempo.
